@@ -1,24 +1,26 @@
 # Circular Array Searching
 
-A C++ DLL for GameMaker that finds the nearest object of a given group on a grid. The room is divided into cells of a fixed size, each cell records one object, and a search walks an offset table that was sorted from the nearest cell outward in advance. With many units on screen, a target can be picked without measuring the distance of every pair. It consists of the DLL, a GameMaker extension package, and a demo that shows it working.
+[한국어](README.ko.md)
+
+A C++ DLL for GameMaker that finds the nearest object of the same group on a grid. The room is divided into cells of a fixed size, each cell records one object, and a search walks an offset table that was sorted in advance from the nearest cell outward. With many units, it can pick a target without measuring the distance between every pair. It consists of the DLL, a GameMaker extension package, and a demo that shows it working.
 
 <p>
-  <img src="docs/screenshots/screenshot-1.png" width="480" alt="Demo">
+  <img src="docs/screenshots/screenshot-1.png" width="480" alt="Demo screen">
 </p>
 
 
 ## How to use
 
-The Releases download contains the GameMaker 8 extension package `cas.gex` and the demo project. Install the extension package and include it in a project to get four functions.
+The archive downloaded from Releases contains the GameMaker 8 extension package `cas.gex` and the demo project. Install the extension package and include it in a project to get four functions.
 
 | Function | Action |
 |---|---|
 | `cas_create(width, height, cellsize)` | Builds the grid and the distance table from the room size and the cell size. Returns 0 if one already exists |
 | `cas_update(xprevious, yprevious, x, y, group, id)` | Removes the object from its previous cell and records its group and id in the current cell |
 | `cas_search(x, y, id, range, group)` | Returns the id of the nearest `group` object within `range` of that position, or `noone` if there is none |
-| `cas_destroy()` | Frees the grid and the table |
+| `cas_destroy()` | Deletes the grid and the table |
 
-Only one structure can exist at a time, and a cell holds one object. A unit in the demo uses it every step like this.
+Only one structure can exist at a time, and a cell holds only one object. Each unit in the demo calls them every step like this.
 
 ```gml
 cas_update(xprevious, yprevious, x, y, group, id)
@@ -30,12 +32,12 @@ if target != noone {
 }
 ```
 
-The demo scatters 250 units on a 1000x1000 room with 20 pixel cells and assigns each to the blue or red group at random. Every unit turns toward the nearest unit of its own group, and the view scrolls when the mouse touches the edge of the screen. The source builds by opening `CAS.dev` in wxDev-C++ or with `Makefile.win`.
+The demo scatters 250 units on a 1000x1000 room with 20 pixel cells and assigns each to the blue or red group at random. Every unit turns toward the nearest unit of its own group, and the view moves when the mouse touches the edge of the screen. To build the source, open `CAS.dev` in wxDev-C++ or use `Makefile.win`.
 
 
 ## How it works
 
-**An offset table sorted by distance is built in advance.** `cas_create` raises the squared distance `i` from 1, finds integer pairs with `j² + u² = i`, and expands each pair through seven symmetry transforms into cell offsets in all eight directions. Offsets at the same distance form a ring, and each ring is preceded by a header entry holding its count and distance. The whole table runs from the shortest ring to the longest, so search order is distance order.
+**An offset table sorted by distance is built in advance.** `cas_create` counts the squared distance `i` up from 1, finds integer pairs with `j² + u² = i`, and flips each pair through seven symmetry transforms to spread it into cell offsets in eight directions. Offsets at the same distance are grouped into one ring, and each ring starts with a header entry holding its count and distance. The whole table runs from the shortest ring to the longest, so search order and distance order are the same.
 
 ```cpp
 for(i=1; i<radius; i++)
@@ -61,9 +63,9 @@ for(i=1; i<radius; i++)
 }
 ```
 
-**A search follows the table and stops at the first hit.** `cas_search` takes the cell at the query position, adds each offset from the table in turn, and checks whether that cell holds an object of the requested group. It stops when the distance in a ring header times the cell size reaches `range`. The origin cell is not in the table, so the calling object never matches itself.
+**A search follows the table and ends at the first cell that matches.** `cas_search` starts from the cell at the query position, adds the table's offsets to it one by one, and checks whether each resulting cell holds an object of the given group. It stops when the distance in a ring header times the cell size reaches `range`. The origin cell is not in the table, so the calling object never matches itself.
 
-**One object per cell.** Each cell of the grid holds just two values, a group and an id. `cas_update` clears the previous cell only if it still belongs to the object, then overwrites the new cell. Since GameMaker exchanges only doubles with a DLL, every argument and return value is a double.
+**One object per cell.** Each cell of the grid holds only two values, a group and an id. `cas_update` clears the previous cell only if it still belongs to the object, then overwrites the new cell. Since GameMaker exchanges only doubles with a DLL, every argument and return value is a double.
 
 
 ## Files
